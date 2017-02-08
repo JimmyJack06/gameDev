@@ -1,9 +1,23 @@
-#include <Windows.h>
+﻿#include <Windows.h>
+#include <time.h>
 #define  WINDOW_WIDTH 800
 #define  WINDOW_HEIGHT 600
 #define  WINDOW_TITLE L"DXdev"
 
+//global vars
+HDC g_hdc = NULL;
+
+HPEN g_hPen[7] = { 0 };
+HBRUSH g_hBrush[7] = { 0 };
+int g_iPenStyle[7] = { PS_SOLID,PS_DASH,PS_DOT,PS_DASHDOT,PS_DASHDOTDOT,
+PS_NULL,PS_INSIDEFRAME };
+int g_iBrushStyle[6] = { HS_VERTICAL,HS_HORIZONTAL,HS_CROSS,HS_DIAGCROSS,
+HS_FDIAGONAL,HS_BDIAGONAL };
+
 //func declare
+bool Game_Init(HWND hwnd);
+void Game_Paint(HWND hwnd);
+bool Game_CleanUp(HWND hwnd);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 //#pragma comment(lib,"winmm.lib")	//PlaySound()
@@ -45,6 +59,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	ShowWindow(hwnd, nShowCmd);
 	UpdateWindow(hwnd);
 
+	if (!Game_Init(hwnd))
+	{
+		MessageBox(hwnd, L"Init failed.", L"Message window", 0);
+		return false;
+	}
+
+	//PlaySound();
+
+
 	//5.message cycle
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
@@ -62,19 +85,78 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	return 0;
 }
 
+bool Game_Init(HWND hwnd)
+{
+	g_hdc = GetDC(hwnd);
+	srand((unsigned)time(NULL));
+
+	for (int i = 0; i <= 6; i++)
+	{
+		g_hPen[i] = CreatePen(g_iPenStyle[i], 1,
+			RGB(rand() % 256, rand() % 256, rand() % 256));
+		if (i == 6)
+			g_hBrush[i] = CreateSolidBrush(RGB(rand() % 256, rand() % 256, rand() % 256));
+		else
+			g_hBrush[i] = CreateHatchBrush(g_iBrushStyle[i], RGB(rand() % 256, rand() % 256, rand() % 256));
+	}
+
+	Game_Paint(hwnd);
+	ReleaseDC(hwnd, g_hdc);
+	return true;
+}
+
+void Game_Paint(HWND hwnd)
+{
+	int y = 0;
+	for (int i = 0; i <= 6; i++)
+	{
+		y = (i + 1) * 70;	//don't forget
+
+		SelectObject(g_hdc, g_hPen[i]);		//don't forget g_hPen[i]
+		MoveToEx(g_hdc, 30, y, NULL);
+		LineTo(g_hdc, 100, y);
+	}
+
+	int x1 = 120;
+	int x2 = 190;
+
+	for (int i = 0; i <= 6; i++)
+	{
+		SelectObject(g_hdc, g_hBrush[i]);	//don't forget g_hBrush[i]
+		Rectangle(g_hdc, x1, 70, x2, y);
+		x1 += 90;
+		x2 += 90;
+	}
+}
+
+bool Game_CleanUp(HWND hwnd)
+{
+	for (int i = 0; i <= 6; i++)
+	{
+		DeleteObject(g_hPen[i]);
+		DeleteObject(g_hBrush[i]);
+	}
+	return true;
+}
+
 //WndProc()
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	PAINTSTRUCT paintStruct;	//paintStruct
 	switch (message)
 	{
 	case WM_PAINT:
-		ValidateRect(hwnd, NULL);		//??
+		g_hdc = BeginPaint(hwnd, &paintStruct);
+		Game_Paint(hwnd);
+		EndPaint(hwnd, &paintStruct);
+		ValidateRect(hwnd, NULL);		//??update clientArea ,show 
 		break;
 	case WM_KEYDOWN:
 		if (wParam = VK_ESCAPE)
 			DestroyWindow(hwnd);	//send WM_DESTROY
 		break;
 	case WM_DESTROY:
+		Game_CleanUp(hwnd);
 		PostQuitMessage(0);		//important(end thread)
 		break;
 	default:
