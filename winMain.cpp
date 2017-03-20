@@ -13,6 +13,7 @@ int g_iPenStyle[7] = { PS_SOLID,PS_DASH,PS_DOT,PS_DASHDOT,PS_DASHDOTDOT,
 PS_NULL,PS_INSIDEFRAME };
 int g_iBrushStyle[6] = { HS_VERTICAL,HS_HORIZONTAL,HS_CROSS,HS_DIAGCROSS,
 HS_FDIAGONAL,HS_BDIAGONAL };
+HFONT g_hFont = NULL;
 
 //func declare
 bool Game_Init(HWND hwnd);
@@ -90,6 +91,7 @@ bool Game_Init(HWND hwnd)
 	g_hdc = GetDC(hwnd);
 	srand((unsigned)time(NULL));
 
+	//randomly select pen & brush style
 	for (int i = 0; i <= 6; i++)
 	{
 		g_hPen[i] = CreatePen(g_iPenStyle[i], 1,
@@ -107,6 +109,18 @@ bool Game_Init(HWND hwnd)
 
 void Game_Paint(HWND hwnd)
 {
+	g_hFont = CreateFont(45, 0, 0, 0, 0, 0, 0, 0, GB2312_CHARSET, 0, 0, 0, 0, TEXT("sfs"));	//no use
+	//choose font
+	SelectObject(g_hdc, g_hFont);		// initial
+	//set text background
+	SetBkMode(g_hdc, TRANSPARENT);		
+	//text out 
+	wchar_t text1[] = L"Written by a doubi2";
+	SetTextColor(g_hdc, RGB(255, 0, 0));
+	TextOut(g_hdc, 20, 10, text1, wcslen(text1));
+	//DrawText()
+
+	//paint line
 	int y = 0;
 	for (int i = 0; i <= 6; i++)
 	{
@@ -117,6 +131,7 @@ void Game_Paint(HWND hwnd)
 		LineTo(g_hdc, 100, y);
 	}
 
+	//paint rectangle
 	int x1 = 120;
 	int x2 = 190;
 
